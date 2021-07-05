@@ -1,0 +1,9 @@
+__pycache__/
+.idea/
+load/
+save/
+*.ckpt
+*.npz
+*.log
+*.pth
+*.pbs
