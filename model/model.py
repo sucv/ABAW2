@@ -1,28 +1,12 @@
 from model.arcface_model import Backbone
 from model.temporal_convolutional_model import TemporalConvNet
-
+import math
 import os
 import torch
 from torch import nn
 
 from torch.nn import Linear, BatchNorm1d, BatchNorm2d, Dropout, Sequential, Module
 
-from torch.autograd import Function
-
-
-class ReverseLayerF(Function):
-
-    @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-
-        return x.view_as(x)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        output = grad_output.neg() * ctx.alpha
-
-        return output, None
 
 class Flatten(Module):
     def forward(self, input):
@@ -75,9 +59,8 @@ class my_res50(nn.Module):
 
 
 class my_2d1d(nn.Module):
-    def __init__(self, backbone_state_dict, backbone_mode="ir", modality=['frame'], embedding_dim=512, channels=None,
-                 attention=0, output_dim=1, kernel_size=5, adversarial=0, dropout=0.1, root_dir='', mlt_atten=0,
-                 pred_AU=12, pred_Expre=12, au_class_n=12, expre_class_n=7):
+    def __init__(self, backbone_state_dict, backbone_mode="ir", modality=['frame'], embedding_dim=512, channels=None, attention=0,
+                 output_dim=1, kernel_size=5, dropout=0.1, root_dir=''):
         super().__init__()
 
         self.modality = modality
@@ -91,23 +74,6 @@ class my_2d1d(nn.Module):
         self.kernel_size = kernel_size
         self.attention = attention
         self.dropout = dropout
-        self.adversarial = adversarial
-        self.mlt_atten = mlt_atten
-        self.pred_AU = pred_AU
-        self.pred_Expre = pred_Expre
-        self.n_tasks = 0
-        if output_dim:
-            self.n_tasks += 1
-            self.VA_index = self.n_tasks
-        if self.pred_AU:
-            self.n_tasks += 1
-            self.AU_index = self.n_tasks
-        if self.pred_Expre:
-            self.n_tasks += 1
-            self.Expre_index = self.n_tasks
-        self.au_class_n = au_class_n
-        self.expre_class_n = expre_class_n
-        assert self.n_tasks > 0
 
     def init(self, fold=None):
         path = os.path.join(self.root_dir, self.backbone_state_dict + ".pth")
@@ -136,42 +102,13 @@ class my_2d1d(nn.Module):
         self.temporal = TemporalConvNet(
             num_inputs=self.embedding_dim, num_channels=self.channels, kernel_size=self.kernel_size, attention=self.attention,
             dropout=self.dropout)
-        if self.output_dim:
-            self.regressor = nn.Linear(self.embedding_dim // 4, self.output_dim)
-
-        if self.adversarial:
-            self.domain_classifier = nn.Sequential()
-            self.domain_classifier.add_module('d_fc1', nn.Linear(self.embedding_dim // 4, self.embedding_dim // 16))
-            self.domain_classifier.add_module('d_bn1', nn.BatchNorm1d(self.embedding_dim // 16))
-            self.domain_classifier.add_module('d_relu1', nn.ReLU(True))
-            self.domain_classifier.add_module('d_fc2', nn.Linear(self.embedding_dim // 16, 2))
-            self.domain_classifier.add_module('d_softmax', nn.LogSoftmax(dim=1))
-
-        if self.mlt_atten:
-            from model.mlt_attention import Attn_Net_Gated
-            self.mlt_atten_net = nn.Sequential(*[
-                Attn_Net_Gated(indim=self.embedding_dim // 4, hiddim=self.embedding_dim // 4, n_tasks=self.n_tasks),
-                nn.Softmax(dim=1)
-            ])
-
-        if self.pred_AU:
-            self.auPred = nn.Sequential(*[
-                nn.Linear(self.embedding_dim // 4, self.au_class_n),
-                nn.Sigmoid()
-            ])
-        if self.pred_Expre:
-            self.exprePred = nn.Sequential(*[
-                nn.Linear(self.embedding_dim // 4, self.expre_class_n),
-                # nn.Softmax(dim=1)
-            ])
-
+        self.regressor = nn.Linear(self.embedding_dim // 4, self.output_dim)
         # self.regressor = Sequential(
         #     BatchNorm1d(self.embedding_dim // 4),
         #     Dropout(0.4),
         #     Linear(self.embedding_dim // 4, self.output_dim))
 
-    def forward(self, x, alpha=0):
-        output = {}
+    def forward(self, x):
         num_batches, length, channel, width, height = x.shape
         x = x.view(-1, channel, width, height)
         x = self.spatial(x)
@@ -179,36 +116,148 @@ class my_2d1d(nn.Module):
         x = x.view(num_batches, length, feature_dim).transpose(1, 2).contiguous()
         x = self.temporal(x).transpose(1, 2).contiguous()
         x = x.contiguous().view(num_batches * length, -1)
-        x_AU = x
-        x_Expre = x
+        x = self.regressor(x)
+        x = x.view(num_batches, length, -1)
+        return x
 
-        if self.mlt_atten:
-            A = self.mlt_atten_net(x) #  n_tasks X num_batches*length
-            X = [A[:, i].repeat(x.shape[-1], 1).transpose(1, 0) * x for i in range(self.n_tasks)]
-            if self.output_dim:
-                x = X[self.VA_index]
-            elif self.pred_AU:
-                x_AU = X[self.AU_index]
-            elif self.pred_Expre:
-                x_Expre = X[self.Expre_index]
 
-        if self.adversarial:
-            reverse_feature = ReverseLayerF.apply(x, alpha)
-            domain_output = self.domain_classifier(reverse_feature)
-            output['domain_output'] = domain_output
-        if self.output_dim:
-            output['x'] = self.regressor(x).view(num_batches, length, -1)
-        if self.pred_AU:
-            output['AU'] = self.auPred(x_AU).view(num_batches, length, -1)
-        if self.pred_Expre:
-            output['Expre'] = self.exprePred(x_Expre).view(num_batches, length, -1)
+class my_2d1ddy(nn.Module):
+    def __init__(self, backbone_state_dict, backbone_mode="ir", modality=['frame'], embedding_dim=512, channels=None, attention=0,
+                 output_dim=1, kernel_size=5, dropout=0.1, root_dir='', input_dim_other=[128, 39]):
+        super().__init__()
 
-        return output
+        self.modality = modality
+        self.backbone_state_dict = backbone_state_dict
+        self.backbone_mode = backbone_mode
+        self.root_dir = root_dir
+
+        self.embedding_dim = embedding_dim
+        self.channels = channels
+        self.output_dim = output_dim
+        self.kernel_size = kernel_size
+        self.attention = attention
+        self.dropout = dropout
+        self.other_feature_dim = input_dim_other  # input dimension of other modalities
+
+    def init(self, fold=None):
+        path = os.path.join(self.root_dir, self.backbone_state_dict + ".pth")
+
+        spatial = my_res50(mode=self.backbone_mode, root_dir=self.root_dir, use_pretrained=False)
+        state_dict = torch.load(path, map_location='cpu')
+        spatial.load_state_dict(state_dict)
+
+        for param in spatial.parameters():
+            param.requires_grad = False
+
+        self.spatial = spatial.backbone
+        self.temporal = TemporalConvNet(
+            num_inputs=self.embedding_dim, num_channels=self.channels, kernel_size=self.kernel_size, attention=self.attention,
+            dropout=self.dropout)
+
+        self.temporal1 = TemporalConvNet(
+            num_inputs=self.other_feature_dim[0], num_channels=[32, 32, 32, 32], kernel_size=self.kernel_size,
+            attention=self.attention,
+            dropout=self.dropout)
+        self.temporal2 = TemporalConvNet(
+            num_inputs=self.other_feature_dim[1], num_channels=[32, 32, 32, 32], kernel_size=self.kernel_size,
+            attention=self.attention,
+            dropout=self.dropout)
+        '''
+        self.temporal3 = TemporalConvNet(
+            num_inputs=self.other_feature_dim[2], num_channels=[32, 32, 32, 32], kernel_size=self.kernel_size,
+            attention=self.attention,
+            dropout=self.dropout)
+        self.temporal4 = TemporalConvNet(
+            num_inputs=self.other_feature_dim[3], num_channels=[32, 32, 32, 32], kernel_size=self.kernel_size,
+            attention=self.attention,
+            dropout=self.dropout)
+        '''
+
+        self.encoder1 = nn.Linear(self.embedding_dim // 4, 32)
+        self.encoder2 = nn.Linear(self.other_feature_dim[0] // 4, 32)
+        self.encoder3 = nn.Linear(32, 32)
+
+        self.encoderQ1 = nn.Linear(self.embedding_dim // 4, 32)
+        self.encoderQ2 = nn.Linear(self.other_feature_dim[0] // 4, 32)
+        self.encoderQ3 = nn.Linear(32, 32)
+
+        self.encoderV1 = nn.Linear(self.embedding_dim // 4, 32)
+        self.encoderV2 = nn.Linear(self.other_feature_dim[0] // 4, 32)
+        self.encoderV3 = nn.Linear(32, 32)
+        #self.encoder4 = nn.Linear(self.other_feature_dim[3] // 4, 32)
+        self.gn1 = nn.GroupNorm(8, 32)
+        self.gn2 = nn.GroupNorm(8, 32)
+
+        self.ln = nn.LayerNorm([3, 32])
+
+        self.regressor = nn.Linear(224, self.output_dim)
+        # self.regressor = Sequential(
+        #     BatchNorm1d(self.embedding_dim // 4),
+        #     Dropout(0.4),
+        #     Linear(self.embedding_dim // 4, self.output_dim))
+
+    def forward(self, x, x1, x2):
+        num_batches, length, channel, width, height = x.shape
+        x = x.view(-1, channel, width, height)
+        x = self.spatial(x)
+        _, feature_dim = x.shape
+        x = x.view(num_batches, length, feature_dim).transpose(1, 2).contiguous()
+        x = self.temporal(x).transpose(1, 2).contiguous()
+        x = x.contiguous().view(num_batches * length, -1)
+
+        if len(x1) > 1 and len(x2) > 1:
+            x1 = x1.squeeze().transpose(1, 2).contiguous().float()
+            x2 = x2.squeeze().transpose(1, 2).contiguous().float()
+        else:
+            x1 = x1.squeeze()[None, :, :].transpose(1, 2).contiguous().float()
+            x2 = x2.squeeze()[None, :, :].transpose(1, 2).contiguous().float()
+        #x3 = x3.transpose(1, 2).contiguous().float()
+        #x4 = x4.transpose(1, 2).contiguous().float()
+
+        x1 = self.temporal1(x1).transpose(1, 2).contiguous()
+        x2 = self.temporal2(x2).transpose(1, 2).contiguous()
+        #x3 = self.temporal3(x3).transpose(1, 2).contiguous()
+        #x4 = self.temporal4(x4).transpose(1, 2).contiguous()
+
+        x0 = self.encoder1(x)
+        x1 = self.encoder2(x1.contiguous().view(num_batches * length, -1))
+        x2 = self.encoder3(x2.contiguous().view(num_batches * length, -1))
+
+        xq0 = self.encoderQ1(x)
+        xq1 = self.encoderQ2(x1.contiguous().view(num_batches * length, -1))
+        xq2 = self.encoderQ3(x2.contiguous().view(num_batches * length, -1))
+
+        xv0 = self.encoderV1(x)
+        xv1 = self.encoderV2(x1.contiguous().view(num_batches * length, -1))
+        xv2 = self.encoderV3(x2.contiguous().view(num_batches * length, -1))
+        #x3 = x3.contiguous().view(num_batches * length, -1)
+        #x4 = x4.contiguous().view(num_batches * length, -1)
+
+        x_K = torch.stack((x0, x1, x2), dim=-2)
+        x_Q = torch.stack((xq0, xq1, xq2), dim=-2)
+        x_V = torch.stack((xv0, xv1, xv2), dim=-2)
+
+        x_QT = x_Q.permute(0, 2, 1)
+
+        scores = torch.matmul(x_K, x_QT) / math.sqrt(32)
+
+        scores = nn.functional.softmax(scores, dim=-1)
+
+        out = torch.matmul(scores, x_V)
+
+        out = self.ln(out + x_V)
+
+        out = out.view(out.size()[0], -1)
+
+        x = torch.cat((x, out), dim=-1)
+        x = self.regressor(x)
+        x = x.view(num_batches, length, -1)
+        return x
 
 
 class my_2dlstm(nn.Module):
     def __init__(self, backbone_state_dict, backbone_mode="ir", modality='frame', embedding_dim=512, hidden_dim=256,
-                 output_dim=1, adversarial=0, bidirectional=1, dropout=0.5, root_dir=''):
+                 output_dim=1, dropout=0.5, root_dir=''):
         super().__init__()
 
         self.modality = modality
@@ -220,8 +269,6 @@ class my_2dlstm(nn.Module):
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
         self.dropout = dropout
-        self.bidirectional = bidirectional
-        self.adversarial = adversarial
 
     def init(self, fold=None):
         path = os.path.join(self.root_dir, self.backbone_state_dict + ".pth")
@@ -251,22 +298,9 @@ class my_2dlstm(nn.Module):
         self.spatial = spatial.backbone
         self.temporal = nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim, num_layers=2,
                                 batch_first=True, bidirectional=True, dropout=self.dropout)
+        self.regressor = nn.Linear(self.hidden_dim * 2, self.output_dim)
 
-        input_dim = self.hidden_dim
-        if self.bidirectional:
-            input_dim = self.hidden_dim * 2
-        self.regressor = nn.Linear(input_dim, self.output_dim)
-
-        if self.adversarial:
-            self.domain_classifier = nn.Sequential()
-            self.domain_classifier.add_module('d_fc1', nn.Linear(input_dim, input_dim // 4))
-            self.domain_classifier.add_module('d_bn1', nn.BatchNorm1d(input_dim // 4))
-            self.domain_classifier.add_module('d_relu1', nn.ReLU(True))
-            self.domain_classifier.add_module('d_fc2', nn.Linear(input_dim // 4, 2))
-            self.domain_classifier.add_module('d_softmax', nn.LogSoftmax(dim=1))
-
-    def forward(self, x, alpha=1):
-        output = {}
+    def forward(self, x):
         num_batches, length, channel, width, height = x.shape
         x = x.view(-1, channel, width, height)
         x = self.spatial(x)
@@ -274,22 +308,14 @@ class my_2dlstm(nn.Module):
         x = x.view(num_batches, length, feature_dim).contiguous()
         x, _ = self.temporal(x)
         x = x.contiguous().view(num_batches * length, -1)
-
-        if self.adversarial:
-            reverse_feature = ReverseLayerF.apply(x, alpha)
-            domain_output = self.domain_classifier(reverse_feature)
-            output['domain_output'] = domain_output
-
         x = self.regressor(x)
         x = x.view(num_batches, length, -1)
-        output['x'] = x
-
         return x
 
 
 class my_temporal(nn.Module):
     def __init__(self, model_name, num_inputs=192, cnn1d_channels=[128, 128, 128], cnn1d_kernel_size=5, cnn1d_dropout_rate=0.1,
-                 embedding_dim=256, hidden_dim=128, lstm_dropout_rate=0.5, adversarial=0, bidirectional=True, output_dim=1):
+                 embedding_dim=256, hidden_dim=128, lstm_dropout_rate=0.5, bidirectional=True, output_dim=1):
         super().__init__()
         self.output_dim = output_dim
         self.model_name = model_name
@@ -297,27 +323,18 @@ class my_temporal(nn.Module):
             self.temporal = TemporalConvNet(num_inputs=num_inputs, num_channels=cnn1d_channels,
                                        kernel_size=cnn1d_kernel_size, dropout=cnn1d_dropout_rate)
             self.regressor = nn.Linear(cnn1d_channels[-1], output_dim)
-            ad_input_dim = cnn1d_channels[-1]
+
         elif "lstm" in model_name:
             self.temporal = nn.LSTM(input_size=num_inputs, hidden_size=hidden_dim, num_layers=2,
                                 batch_first=True, bidirectional=bidirectional, dropout=lstm_dropout_rate)
             input_dim = hidden_dim
             if bidirectional:
                 input_dim = hidden_dim * 2
-            ad_input_dim = input_dim
 
             self.regressor = nn.Linear(input_dim, output_dim)
 
-        if self.adversarial:
-            self.domain_classifier = nn.Sequential()
-            self.domain_classifier.add_module('d_fc1', nn.Linear(ad_input_dim, ad_input_dim // 4))
-            self.domain_classifier.add_module('d_bn1', nn.BatchNorm1d(100))
-            self.domain_classifier.add_module('d_relu1', nn.ReLU(True))
-            self.domain_classifier.add_module('d_fc2', nn.Linear(ad_input_dim // 4, 2))
-            self.domain_classifier.add_module('d_softmax', nn.LogSoftmax(dim=1))
 
-    def forward(self, x, alpha=1):
-        output = {}
+    def forward(self, x):
         features = {}
         if "lstm_only" in self.model_name:
             x, _ = self.temporal(x)
@@ -328,13 +345,6 @@ class my_temporal(nn.Module):
         batch, time_step, temporal_feature_dim = x.shape
 
         x = x.view(-1, temporal_feature_dim)
-
-        if self.adversarial:
-            reverse_feature = ReverseLayerF.apply(x, alpha)
-            domain_output = self.domain_classifier(reverse_feature)
-            output['domain_output'] = domain_output
-
         x = self.regressor(x).contiguous()
         x = x.view(batch, time_step, self.output_dim)
-        output['x'] = x
         return x

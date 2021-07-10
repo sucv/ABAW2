@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     # 1. Experiment Setting
     # 1.1. Server
-    parser.add_argument('-gpu', default=2, type=int, help='Which gpu to use?')
+    parser.add_argument('-gpu', default=1, type=int, help='Which gpu to use?')
     parser.add_argument('-cpu', default=1, type=int, help='How many threads are allowed?')
     parser.add_argument('-high_performance_cluster', default=0, type=int, help='On high-performance server or not?'
                                                                                'If set to 1, then the gpu and cpu settings will be ignored.'
@@ -17,19 +17,19 @@ if __name__ == '__main__':
                                                                                'e.g., on Google Colab or NSCC.')
 
     # 1.2. Paths
-    parser.add_argument('-dataset_path', default='D:/affwild2_full', type=str,
+    parser.add_argument('-dataset_path', default='/home/zhangsu/dataset/affwild2', type=str,
                         help='The root directory of the dataset.')  # /scratch/users/ntu/su012/dataset/mahnob
-    parser.add_argument('-model_load_path', default='D:/ABAW-CrossVal/load_path', type=str,
+    parser.add_argument('-model_load_path', default='/home/zhangsu/ABAW2-attention/load', type=str,
                         help='The path to load the trained model.')  # /scratch/users/ntu/su012/pretrained_model
-    parser.add_argument('-model_save_path', default='D:/ABAW-Adversal/save', type=str,
+    parser.add_argument('-model_save_path', default='/home/zhangsu/ABAW2-attention/save', type=str,
                         help='The path to save the trained model ')  # /scratch/users/ntu/su012/trained_model
-    parser.add_argument('-python_package_path', default='D:/ABAW-Adversal', type=str,
+    parser.add_argument('-python_package_path', default='/home/zhangsu/ABAW2-attention', type=str,
                         help='The path to the entire repository.')
 
     # 1.3. Experiment name, and stamp, will be used to name the output files.
     # Stamp is used to add a string to the outpout filename, so that instances with different setting will not overwride.
     parser.add_argument('-experiment_name', default="ABAW2", help='The experiment name.')
-    parser.add_argument('-stamp', default='multitask-debug', type=str, help='To indicate different experiment instances')
+    parser.add_argument('-stamp', default='test', type=str, help='To indicate different experiment instances')
 
     # 1.4. Load checkpoint or not?
     parser.add_argument('-resume', default=0, type=int, help='Resume from checkpoint?')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # For the latter, a weight will be applied to the output to favor the selected emotion.
     parser.add_argument('-train_emotion', default="valence",
                         help='The emotion dimension to focus when updating gradient: arousal, valence, both')
-    parser.add_argument('-head', default="sh", help='Output 2 dimensions or 1 or 0? mh: multi-headed, sh: single-headed, nh: no-headed')
+    parser.add_argument('-head', default="sh", help='Output 2 dimensions or 1? mh: multi-headed, sh: single-headed')
 
     # 1.8. Whether to save the model?
     parser.add_argument('-save_model', default=1, type=int, help='Whether to save the model?')
@@ -84,13 +84,11 @@ if __name__ == '__main__':
 
     # 2.4. LSTM settings.
     parser.add_argument('-lstm_embedding_dim', default=256, type=int, help='Dimensions for LSTM feature vectors.')
-    parser.add_argument('-lstm_bidirectional', default=1, type=int)
     parser.add_argument('-lstm_hidden_dim', default=128, type=int,
                         help='The size of the 1D kernel for temporal convolutional networks.')
     parser.add_argument('-lstm_dropout', default=0.4, type=float, help='The dropout rate.')
 
     # 3. Training settings.
-    parser.add_argument('-adversarial', default=1, type=int)
     parser.add_argument('-cross_validation', default=1, type=int)
     parser.add_argument('-folds_to_run', default=[0], nargs="+", type=int)
 
@@ -122,15 +120,11 @@ if __name__ == '__main__':
     parser.add_argument('-save_plot', default=0, type=int,
                         help='Whether to plot the session-wise output/target or not?')
 
-    # 3.3 Multi-task Training
-    parser.add_argument('-mlt_attention', default=0, type=int)
-    parser.add_argument('-pred_AU', default=0, type=int)
-    parser.add_argument('-pred_Expre', default=0, type=int)
-
     args = parser.parse_args()
     sys.path.insert(0, args.python_package_path)
 
-    from experiment_regular import Experiment
+    from test import Experiment
+    # from experiment_regular import Experiment
 
     experiment_handler = Experiment(args)
     experiment_handler.experiment()

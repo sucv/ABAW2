@@ -21,15 +21,7 @@ class Checkpointer(object):
 
         self.columns = []
 
-    def save_log_to_csv(self, epoch, mean_train_record, mean_validate_record, cls_train_record=None, cls_val_record=None):
-        """
-        :param epoch:
-        :param mean_train_record:
-        :param mean_validate_record:
-        :param cls_train_record: [{'acc': float, 'f1': float}, []]: [AU record, [Expression record]]
-        :param cls_val_record:  [{'acc': float, 'f1': float},[]]: [AU record, [Expression record]]
-        :return:
-        """
+    def save_log_to_csv(self, epoch, mean_train_record, mean_validate_record):
         num_layers_to_update = len(self.trainer.optimizer.param_groups[0]['params'])
 
         csv_records = [time.time(), epoch, int(self.trainer.best_epoch_info['epoch']), num_layers_to_update,
@@ -49,7 +41,7 @@ class Checkpointer(object):
                     mean_train_record['Valence']['pcc'][0][1], mean_train_record['Valence']['ccc'][0],
                     mean_validate_record['Valence']['rmse'][0], mean_validate_record['Valence']['pcc'][0][0],
                     mean_validate_record['Valence']['pcc'][0][1], mean_validate_record['Valence']['ccc'][0]])
-        elif self.trainer.head == "multi-headed":
+        else:
             csv_records.extend([
                                    mean_train_record['Arousal']['rmse'][0], mean_train_record['Arousal']['pcc'][0][0],
                                    mean_train_record['Arousal']['pcc'][0][1], mean_train_record['Arousal']['ccc'][0],
@@ -61,20 +53,13 @@ class Checkpointer(object):
                                    mean_validate_record['Valence']['rmse'][0], mean_validate_record['Valence']['pcc'][0][0],
                                    mean_validate_record['Valence']['pcc'][0][1], mean_validate_record['Valence']['ccc'][0]])
 
-        if cls_train_record and cls_val_record:
-            for tr_record, val_record in zip(cls_train_record, cls_val_record):
-                csv_records.extend([
-                    tr_record['acc'], tr_record['f1'], tr_record['total'],
-                    val_record['acc'], val_record['f1'], val_record['total'],
-                ])
-
         row_df = pd.DataFrame(data=csv_records)
         row_df.T.to_csv(self.trainer.csv_filename, mode='a', index=False, header=False)
 
-    def init_csv_logger(self, args, config, AU_column=['acc_au', 'f1_au', 'total_au'],
-                        Expre_column=['acc_expre', 'f1_expre', 'total_expre']):
+    def init_csv_logger(self, args, config):
 
         self.trainer.csv_filename = os.path.join(self.trainer.save_path, "training_logs.csv")
+
         # Record the arguments.
         arguments_dict = vars(args)
         arguments_dict = pd.json_normalize(arguments_dict, sep='_')
@@ -96,15 +81,11 @@ class Checkpointer(object):
             else:
                 self.columns.extend(['tr_rmse_v', 'tr_pcc_v_v', 'tr_pcc_v_conf', 'tr_ccc_v',
                                      'val_rmse_v', 'val_pcc_v_v', 'val_pcc_v_conf', 'val_ccc_v'])
-        elif self.trainer.head == "multi-headed":
+        else:
             self.columns.extend(['tr_rmse_a', 'tr_pcc_a_v', 'tr_pcc_a_conf', 'tr_ccc_a',
                                  'val_rmse_a', 'val_pcc_a_v', 'val_pcc_a_conf', 'val_ccc_a']
                                 + ['tr_rmse_v', 'tr_pcc_v_v', 'tr_pcc_v_conf', 'tr_ccc_v',
                                    'val_rmse_v', 'val_pcc_v_v', 'val_pcc_v_conf', 'val_ccc_v'])
-        if args.pred_AU:
-            self.columns.extend(['tr_'+c for c in AU_column] + ['val_'+c for c in AU_column])
-        if args.pred_Expre:
-            self.columns.extend(['tr_'+c for c in Expre_column] + ['val_'+c for c in Expre_column])
 
         df = pd.DataFrame(columns=self.columns)
         df.to_csv(self.trainer.csv_filename, mode='a', index=False)
