@@ -21,6 +21,8 @@
 | AU + EXPR + Attn | 32/38 | 0.4279 | **<font color=red>0.4077</font>** | --- | --- |
 |  |  |  |  |  |  |
 | fusion features |  |  |  |  |  |
-| AU | running | running | --- | --- | --- |
+| AU | 12/32 | 0.5723 | --- | --- | --- |
+| EXPR | 7/27 | --- | 0.3395 | --- | --- |
+| AU + EXPR + Attn | 7/27 | 0.4223 | 0.3390 | --- | --- |
 
-> **Attn**: Multi-task Attention.
+> *Attn: Multi-task Attention.
