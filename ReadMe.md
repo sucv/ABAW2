@@ -28,3 +28,17 @@
 | AU + EXPR + Attn | 7/27 | 0.4223 | 0.3390 | --- | --- |
 
 > *Attn: Multi-task Attention.
+
+# Methods
+
+1. Directly stacking one Linear layer (FC) for each task after the shared TCN with every task. 
+
+2. For multi-task attention, two stages are stacked as the attention module before output layers. 
+
+  i. In stage one, with `N` tasks, one FC operation _a_ has `1` output channel for the first task and another _b_ has `N-1` channels for other tasks are activated by `nn.Tanh()` and `nn.Sigmoid`, respectively. Then, `a = a.mul(b[..., n])`, where `n` indicates each channel of _b_ and `n <= N-1`. 
+
+  ii. In stage two, with one FC `out` has `N` output channels, `attn = Softmax(out(a))`. The dot-product between every frame of input embedded features with the task attention, `x = attn[:, n]*x`, where `n <= N`.
+
+# Conclusion
+
+Briefly, some simple Linear layers are rather powerless for new challenging tasks, even Attn improved some performances.
