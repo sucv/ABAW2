@@ -37,7 +37,7 @@
 
   i. In stage one, with `N` tasks, one FC operation _a_ has `1` output channel for the first task and another _b_ has `N-1` channels for other tasks are activated by `nn.Tanh()` and `nn.Sigmoid`, respectively. Then, `a = a.mul(b[..., n])`, where `n` indicates each channel of _b_ and `n <= N-1`. 
 
-  ii. In stage two, with one FC `out` has `N` output channels, `attn = Softmax(out(a))`. The dot-product between every frame of input embedded features with the task attention, `x = attn[:, n]*x`, where `n <= N`.
+  ii. In stage two, with one FC `out` has `N` output channels, `attn = Softmax(out(a))`. The dot-product is used between every frame of input embedded features with the task attention, `x = attn[:, n]*x`, where `n <= N`.
 
 # Conclusion
 
