@@ -134,7 +134,27 @@ Affwild2_processed
 ¦   dataset_info.pkl
 ¦   mean_std_dict.pkl
 ¦
-+---npy data
+¦   
++---npy_data
+¦   ¦   +--- 1-30-1280x720
+¦   ¦   ¦    ¦    frame.npy
+¦   ¦   ¦    ¦    mfcc.npy
+¦   ¦   ¦    ¦    vggish.npy
+¦   ¦   ¦    ¦    continuous_label.npy
+¦   ¦   ¦    ¦    ...
+¦   ¦   +--- 2-30-640x360
+¦   ¦   ¦    ¦    frame.npy
+¦   ¦   ¦    ¦    mfcc.npy
+¦   ¦   ¦    ¦    vggish.npy
+¦   ¦   ¦    ¦    continuous_label.npy
+¦   ¦   ¦    ¦    ...
+¦   ¦   +--- 3-25-1920x1080
+¦   ¦   ¦    ¦    frame.npy
+¦   ¦   ¦    ¦    mfcc.npy
+¦   ¦   ¦    ¦    vggish.npy
+¦   ¦   ¦    ¦    continuous_label.npy
+¦   ¦   ¦    ¦    ...
+¦   ¦   +--- ...
 ```
 
 
