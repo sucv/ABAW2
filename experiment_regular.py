@@ -8,7 +8,7 @@ from torch import nn
 
 from base.utils import detect_device, select_gpu, set_cpu_thread
 from configs import config_processing as config
-from model.model import my_2d1d, my_2dlstm, my_temporal, my_2d1ddy
+from model.model import my_2d1d, my_2d1ddy
 from base.dataset import ABAW2_VA_Arranger, ABAW2_VA_Dataset
 from base.checkpointer import Checkpointer
 from base.parameter_control import ParamControl
@@ -70,7 +70,6 @@ class Experiment(object):
         self.backbone_state_dict = args.backbone_state_dict
         self.backbone_mode = args.backbone_mode
 
-        self.input_dim = args.input_dim
         self.cnn1d_embedding_dim = args.cnn1d_embedding_dim
         self.cnn1d_channels = args.cnn1d_channels
         self.cnn1d_kernel_size = args.cnn1d_kernel_size
@@ -195,19 +194,6 @@ class Experiment(object):
                                 output_dim=output_dim, kernel_size=self.cnn1d_kernel_size, attention=self.cnn1d_attention,
                                 dropout=self.cnn1d_dropout, root_dir=self.model_load_path)
             model.init()
-
-        elif "2dlstm" in self.model_name:
-            model = my_2dlstm(backbone_state_dict=self.backbone_state_dict, backbone_mode=self.backbone_mode,
-                              embedding_dim=self.lstm_embedding_dim, hidden_dim=self.lstm_hidden_dim,
-                              output_dim=output_dim, dropout=self.lstm_dropout,
-                              root_dir=self.model_load_path)
-            model.init()
-        elif "1d_only" in self.model_name or "lstm_only" in self.model_name:
-            model = my_temporal(model_name=self.model_name, num_inputs=self.input_dim,
-                                cnn1d_channels=self.cnn1d_channels, cnn1d_kernel_size=self.cnn1d_kernel_size,
-                                cnn1d_dropout_rate=self.cnn1d_dropout, embedding_dim=self.lstm_embedding_dim,
-                                hidden_dim=self.lstm_hidden_dim, lstm_dropout_rate=self.lstm_dropout,
-                                output_dim=output_dim)
         else:
             raise ValueError("Unknown base_model!")
 

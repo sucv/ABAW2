@@ -6,9 +6,13 @@ from base.utils import load_single_pkl, save_pkl_file
 from base.dataset import ABAW2_VA_Arranger
 from experiment_regular import Experiment
 
+# Please change it accordingly.
 dataset_path = "/home/zhangsu/dataset/affwild2"
-dataset_info = load_single_pkl(directory=dataset_path, filename="dataset_info")
+
+
+# No need to change the rest.
 feature_list = ['vggish', 'mfcc', 'egemaps']
+dataset_info = load_single_pkl(directory=dataset_path, filename="dataset_info")
 partition_list = ['Train_Set', 'Validation_Set', 'Target_Set']
 mean_std_dict = {feature: {fold: {partition: {'mean': None, 'std': None} for partition in partition_list} for fold in range(6)} for feature in feature_list}
 feature_array = []

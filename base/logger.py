@@ -2,7 +2,7 @@ import os
 
 import statistics
 import numpy as np
-import matplotlib.pyplot as plt
+
 from scipy.stats import pearsonr
 
 
@@ -69,6 +69,7 @@ class PlotHandlerTrial(object):
             self.plot_and_save(full_plot_filename, trial, output_record, label_record, ylim_low, ylim_high)
 
     def plot_and_save(self, full_plot_filename, trial, output, continuous_label, ylim_low=None, ylim_high=None):
+        import matplotlib.pyplot as plt
         fig, ax = plt.subplots(len(self.emotional_dimension), 1)
 
         for index, emotion in enumerate(self.emotional_dimension):

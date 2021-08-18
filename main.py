@@ -18,9 +18,9 @@ if __name__ == '__main__':
 
     # 1.2. Paths
     parser.add_argument('-dataset_path', default='/home/zhangsu/dataset/affwild2', type=str,
-                        help='The root directory of the dataset.')  # /scratch/users/ntu/su012/dataset/mahnob
+                        help='The root directory of the preprocessed dataset.')  # /scratch/users/ntu/su012/dataset/mahnob
     parser.add_argument('-model_load_path', default='/home/zhangsu/ABAW2-attention/load', type=str,
-                        help='The path to load the trained model.')  # /scratch/users/ntu/su012/pretrained_model
+                        help='The path to load the trained model, such as the backbone.')  # /scratch/users/ntu/su012/pretrained_model
     parser.add_argument('-model_save_path', default='/home/zhangsu/ABAW2-attention/save', type=str,
                         help='The path to save the trained model ')  # /scratch/users/ntu/su012/trained_model
     parser.add_argument('-python_package_path', default='/home/zhangsu/ABAW2-attention', type=str,
@@ -38,8 +38,8 @@ if __name__ == '__main__':
     parser.add_argument('-debug', default=0, type=int, help='The number of trials to load for debugging. Set to 0 for non-debugging execution.')
 
     # 1.6. What modality to use?
-    #   Currently it supports only one modality, but I still use a list to favor future expansion.
-    parser.add_argument('-modality', default=['frame'], nargs="*", help='frame, fau, flm, vggish, mfcc, egemaps')
+    #  Set to ['frame'] for unimodal and ['frame', 'mfcc', 'vggish' for multimodal. Using other features may cause bugs.
+    parser.add_argument('-modality', default=['frame', 'mfcc', 'vggish'], nargs="*", help='frame, fau, flm, vggish, mfcc, egemaps')
 
     # 1.7. What emotion to train?
     # If choose both, then the multi-headed will be automatically enabled, meaning, the model will predict both the Valence
@@ -55,17 +55,14 @@ if __name__ == '__main__':
 
     # 2. Model setting.
     # 2d1d consists of a Res50 as the backbone for visual encoding, and a TCN for temporal encoding, followed by a fc for regression.
-    # 2dlstm consists of a Res50, a LSTM, and a fc.
-    # 1d_only and lstm_only consists of a TCN and LSTM, for temporal encoding, followed by a fc for regression.
-    parser.add_argument('-model_name', default="2d1d",
-                        help='Model: 2d1d, 2dlstm, 1d_only, lstm_only')
+    parser.add_argument('-model_name', default="2d1d", help='Model: 2d1d')
 
     # 2.1. Res50. This is the backbone of "2d1d"
     parser.add_argument('-backbone_mode', default="ir", help='Mode for resnet50 backbone: ir, ir_se')
     parser.add_argument('-backbone_state_dict', default="res50_ir_0.887",
                         help='The filename for the backbone state dict.')
-    # 2.2. For modalities except "frame", currently only the "1d_only" and "lstm_only" models are available.
-    #   This "input_dim" specifies the input dimension for these models.
+
+    # 2.2. This "input_dim" specifies the input dimension for these models.
     parser.add_argument('-input_dim', default=136, type=int,
                         help='The dimension of the features. Vggish: 128, Facial AU: 17, Facial Landmark: 68x2=136, mfcc: 39,'
                              'egemaps: 23')
@@ -83,6 +80,7 @@ if __name__ == '__main__':
                         help='Whether to use attention layer for each 1d convolutional block.')
 
     # 2.4. LSTM settings.
+    # Not used.
     parser.add_argument('-lstm_embedding_dim', default=256, type=int, help='Dimensions for LSTM feature vectors.')
     parser.add_argument('-lstm_hidden_dim', default=128, type=int,
                         help='The size of the 1D kernel for temporal convolutional networks.')
@@ -90,7 +88,7 @@ if __name__ == '__main__':
 
     # 3. Training settings.
     parser.add_argument('-cross_validation', default=1, type=int)
-    parser.add_argument('-folds_to_run', default=[0], nargs="+", type=int)
+    parser.add_argument('-folds_to_run', default=[0], nargs="+", type=int, help='Which fold(s) to run? Each fold may take 1-2 days.')
 
     parser.add_argument('-learning_rate', default=1e-5, type=float, help='The initial learning rate.')
     parser.add_argument('-min_learning_rate', default=1e-6, type=float, help='The minimum learning rate.')
@@ -124,7 +122,6 @@ if __name__ == '__main__':
     sys.path.insert(0, args.python_package_path)
 
     from test import Experiment
-    # from experiment_regular import Experiment
 
     experiment_handler = Experiment(args)
     experiment_handler.experiment()

@@ -37,13 +37,13 @@ class ABAW2_Preprocessing(object):
         self.annotation_to_partition_dict = self.generate_annotation_to_partition_dict()
         self.dataset_info['annotation_to_partition_dict'] = self.annotation_to_partition_dict
 
-        # # Step 2: preprocess the aural modality.
-        # # Step 2.1: convert all mp4 or avi to uncompressed wav format, since the OpenSmile is not compiled
-        # #   with ffmpeg support. The wav files are to be stored in another folder with the same filename.
-        # self.convert_video_to_wav()
-        #
-        # # # Step 2.2: extract aural features, including mfcc, egemaps, and vggish.
-        # self.extract_aural_features()
+        # Step 2: preprocess the aural modality.
+        # Step 2.1: convert all mp4 or avi to uncompressed wav format, since the OpenSmile is not compiled
+        #   with ffmpeg support. The wav files are to be stored in another folder with the same filename.
+        self.convert_video_to_wav()
+
+        # # Step 2.2: extract aural features, including mfcc, egemaps, and vggish.
+        self.extract_aural_features()
 
         # Step 3: preprocess the visual modality.
         # Step 3.1: obtain the labeled frame index for each video.
@@ -54,7 +54,10 @@ class ABAW2_Preprocessing(object):
         # 1 for available, 0 for unavailable, -1 for non-labeled.
         self.available_frame_indices_of_each_video = self.get_available_frame_indices()
 
-        # # Step 3.3: save the labels in npy format.
+        # Step 3.3: extract visual features including facial landmarks and action units.
+        #   (Extract cropped facial images using Openface. It is not used eventually.
+        #   The cropped-aligned images from the database are used.
+        #    The images are better (in terms of per-frame success rate) than those extracted by OpenFace.)
         # self.extract_visual_features()
 
         # Step 4: prepare the extracted features into npy format.
@@ -62,11 +65,11 @@ class ABAW2_Preprocessing(object):
         #       And filled the missing jpg as black images.
         self.compact_visual_features()
         #
-        # # Step 4.2: compact the extracted aural features, including mfcc, egemaps, and vggish.
-        # self.compact_aural_features()
-        #
-        # # Step 4.3: compact the txt labels into npy format.
-        # self.compact_labels()
+        # Step 4.2: compact the extracted aural features, including mfcc, egemaps, and vggish.
+        self.compact_aural_features()
+
+        # Step 4.3: compact the txt labels into npy format.
+        self.compact_labels()
         #
         # Step 5: generate the dataset info.
         self.generate_dataset_info()
@@ -221,45 +224,45 @@ class ABAW2_Preprocessing(object):
                     frame_matrix = np.stack(frame_matrix)
                     np.save(npy_frame_path, frame_matrix)
 
-                # # For facial landmark
-                # npy_flm_path = os.path.join(npy_folder, "landmark.npy")
-                # landmark_matrix = []
-                #
-                # if not os.path.isfile(npy_flm_path):
-                #     flm_path = os.path.join(self.output_path, "visual_features_openface_48", trial_name + ".csv")
-                #     flm_data_x = pd.read_csv(flm_path, usecols=range(5, 73)).values
-                #     flm_data_y = pd.read_csv(flm_path, usecols=range(73, 141)).values
-                #     flm_data = np.concatenate((flm_data_x[...,None], flm_data_y[...,None]), axis=2)
-                #     success_flm_indices = np.where(pd.read_csv(flm_path, usecols=range(4, 5)).values == 1)
-                #     success_flm_data = flm_data[success_flm_indices[0]]
-                #     success_flm_data = standardize_facial_landmarks(success_flm_data)
-                #     flm_data[success_flm_indices[0]] = success_flm_data
-                #
-                #     for i in range(trial_length):
-                #         if self.labeled_frame_indices_of_each_video[partition][trial_name][i] == 1:
-                #             if i >= len(flm_data):
-                #                 i = -1
-                #             landmark_matrix.append(flm_data[i])
-                #
-                #     landmark_matrix = np.stack(landmark_matrix)
-                #     np.save(npy_flm_path, landmark_matrix)
-                #
-                # # For facial action unit
-                # npy_au_path = os.path.join(npy_folder, "au.npy")
-                # au_matrix = []
-                #
-                # if not os.path.isfile(npy_au_path):
-                #     au_path = os.path.join(self.output_path, "visual_features_openface_48", trial_name + ".csv")
-                #     au_data = pd.read_csv(au_path, usecols=range(141, 158)).values
-                #
-                #     for i in range(trial_length):
-                #         if self.labeled_frame_indices_of_each_video[partition][trial_name][i] == 1:
-                #             if i >= len(au_data):
-                #                 i = -1
-                #             au_matrix.append(au_data[i])
-                #
-                #     au_matrix = np.stack(au_matrix)
-                #     np.save(npy_au_path, au_matrix)
+                # For facial landmark
+                npy_flm_path = os.path.join(npy_folder, "landmark.npy")
+                landmark_matrix = []
+
+                if not os.path.isfile(npy_flm_path):
+                    flm_path = os.path.join(self.output_path, "visual_features_openface_48", trial_name + ".csv")
+                    flm_data_x = pd.read_csv(flm_path, usecols=range(5, 73)).values
+                    flm_data_y = pd.read_csv(flm_path, usecols=range(73, 141)).values
+                    flm_data = np.concatenate((flm_data_x[...,None], flm_data_y[...,None]), axis=2)
+                    success_flm_indices = np.where(pd.read_csv(flm_path, usecols=range(4, 5)).values == 1)
+                    success_flm_data = flm_data[success_flm_indices[0]]
+                    success_flm_data = standardize_facial_landmarks(success_flm_data)
+                    flm_data[success_flm_indices[0]] = success_flm_data
+
+                    for i in range(trial_length):
+                        if self.labeled_frame_indices_of_each_video[partition][trial_name][i] == 1:
+                            if i >= len(flm_data):
+                                i = -1
+                            landmark_matrix.append(flm_data[i])
+
+                    landmark_matrix = np.stack(landmark_matrix)
+                    np.save(npy_flm_path, landmark_matrix)
+
+                # For facial action unit
+                npy_au_path = os.path.join(npy_folder, "au.npy")
+                au_matrix = []
+
+                if not os.path.isfile(npy_au_path):
+                    au_path = os.path.join(self.output_path, "visual_features_openface_48", trial_name + ".csv")
+                    au_data = pd.read_csv(au_path, usecols=range(141, 158)).values
+
+                    for i in range(trial_length):
+                        if self.labeled_frame_indices_of_each_video[partition][trial_name][i] == 1:
+                            if i >= len(au_data):
+                                i = -1
+                            au_matrix.append(au_data[i])
+
+                    au_matrix = np.stack(au_matrix)
+                    np.save(npy_au_path, au_matrix)
 
     def extract_visual_features(self):
 
@@ -320,11 +323,6 @@ class ABAW2_Preprocessing(object):
 
                     if partition != "Test_Set":
                         label_path = os.path.join(self.annotation_path, partition, label)
-                        corresponding_video = self.get_video_path(label, partition)
-                        # image_path = os.path.join(self.image_path, label[:-4])
-
-                        # video = cv2.VideoCapture(corresponding_video)
-                        # video_frame_count = video.get(cv2.CAP_PROP_FRAME_COUNT)
 
                         df = pd.read_csv(label_path, delimiter=",")
                         num_label_points, _ = df.shape
@@ -418,21 +416,23 @@ class ABAW2_Preprocessing(object):
                     if not os.path.isfile(output_path):
                         subprocess.call(command)
 
-                # if "vggish" in self.aural_feature_list:
-                #     feature = "vggish"
-                #
-                #     output_folder = os.path.join(self.output_path, "audio_features_" + feature, partition)
-                #     os.makedirs(output_folder, exist_ok=True)
-                #     output_path = os.path.join(output_folder, wav[:-4] + ".npy")
-                #
-                #     if not os.path.isfile(output_path):
-                #         video = cv2.VideoCapture(corresponding_video)
-                #         video_fps = video.get(cv2.CAP_PROP_FPS)
-                #         hop_sec = 1 / video_fps
-                #
-                #         vggish_feature = extract_vggish(wav_file=input_path, window_sec=0.96, hop_sec=hop_sec)
-                #
-                #         np.save(output_path, vggish_feature)
+                if "vggish" in self.aural_feature_list:
+                    # Requires tensorflow and GPU to run. One wav file at a time.
+                    from vggish.inference import extract_vggish
+                    feature = "vggish"
+
+                    output_folder = os.path.join(self.output_path, "audio_features_" + feature, partition)
+                    os.makedirs(output_folder, exist_ok=True)
+                    output_path = os.path.join(output_folder, wav[:-4] + ".npy")
+
+                    if not os.path.isfile(output_path):
+                        video = cv2.VideoCapture(corresponding_video)
+                        video_fps = video.get(cv2.CAP_PROP_FPS)
+                        hop_sec = 1 / video_fps
+
+                        vggish_feature = extract_vggish(wav_file=input_path, window_sec=0.96, hop_sec=hop_sec)
+
+                        np.save(output_path, vggish_feature)
 
     def convert_video_to_wav(self):
         for partition, files in self.video_to_partition_dict.items():

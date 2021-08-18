@@ -121,7 +121,9 @@ class ABAW2Trainer(object):
             print("------")
             print("Starting testing, on device:", self.device)
 
-        self.loop_test(data_to_load, output_save_path)
+        with torch.no_grad():
+            self.model.eval()
+            self.loop_test(data_to_load, output_save_path)
 
 
     def fit(
@@ -362,6 +364,12 @@ class ABAW2Trainer(object):
     def loop_test(self, data_loader, output_save_path):
 
         output_handler = ContinuousOutputHandlerNPYTrial(self.emotional_dimension)
+        continuous_label_handler = ContinuousOutputHandlerNPYTrial(self.emotional_dimension)
+
+        # This object calculate the metrics, usually by root mean square error, pearson correlation
+        # coefficient, and concordance correlation coefficient.
+        metric_handler = ContinuousMetricsCalculatorTrial(self.metrics, self.emotional_dimension,
+                                                          output_handler, continuous_label_handler)
 
         total_batch_counter = 0
         for batch_index, (X, Y, trials, lengths, indices) in tqdm(enumerate(data_loader), total=len(data_loader)):
@@ -385,15 +393,36 @@ class ABAW2Trainer(object):
             if 'vggish' in X:
                 inputs4 = X['vggish'].to(self.device)
 
+            labels = Y.float().to(self.device)
+
             if len(X.keys())>1:
                 outputs = self.model(inputs, inputs4, inputs3)
             else:
                 outputs = self.model(inputs)
 
             output_handler.update_output_for_seen_trials(outputs.detach().cpu().numpy(), trials, indices, lengths)
+            continuous_label_handler.update_output_for_seen_trials(labels.detach().cpu().numpy(), trials, indices,
+                                                                   lengths)
 
         output_handler.average_trial_wise_records()
+        continuous_label_handler.average_trial_wise_records()
+
         output_handler.concat_records()
+        continuous_label_handler.concat_records()
+
+        # Compute the root mean square error, pearson correlation coefficient and significance, and the
+        # concordance correlation coefficient.
+        # They are calculated by  first concatenating all the output
+        # and continuous labels to two long arrays, and then calculate the metrics.
+        metric_handler.calculate_metrics()
+        epoch_result_dict = metric_handler.metric_record_dict
+
+        plot_handler = PlotHandlerTrial(self.metrics, self.emotional_dimension, epoch_result_dict,
+                                        output_handler.trialwise_records,
+                                        continuous_label_handler.trialwise_records,
+                                        epoch='final', train_mode=False,
+                                        directory_to_save_plot=self.save_path)
+        plot_handler.save_output_vs_continuous_label_plot()
 
         for trial, record in output_handler.trialwise_records.items():
             for emotion, pred in record.items():
@@ -404,7 +433,6 @@ class ABAW2Trainer(object):
                 result.to_csv(result_path, sep=',', index=None)
 
         print(0)
-
 
 
     def combine_record_dict(self, main_record_dict, epoch_record_dict):
