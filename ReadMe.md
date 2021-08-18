@@ -9,7 +9,7 @@ Please cite [our paper](https://arxiv.org/abs/2107.01175). The citation detail i
     + [Step Four: Execute `preprocessing.py`](#PEP)
     + [Step Five: Execute `calculate_mean_and_std.py`](#PEC)
 + [Training](#Training) 
-    + [Step One: Download](#TE) 
+    + [Step One: Download](#TD) 
     + [Step Two: Create the Virtual Environment](#TE) 
     + [Step Three: Configure](#TC)
     + [Step Four: Execute `main.py`](#TEM)
@@ -109,6 +109,7 @@ If you have a regular commercial/office desktop/laptop with a decent remote serv
 We are really sorry for such a tricky preprocessing.
 
 ## Step Five: Execute `calculate_mean_and_std.py` <a name="PEC"></a>
+[Return to Table of Content](#Table_of_Content)
 
 The last step for preprocessing is to generate the mean and standard deviation for each feature. In our paper, we 
  calculate for egemaps, mfcc and VGGish features.
