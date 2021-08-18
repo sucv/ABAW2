@@ -20,7 +20,7 @@ Please cite [our paper](https://arxiv.org/abs/2107.01175). The citation detail i
 
 `preprocessing.py` is the main function for preprocessing.  It is meant to run using IDE like Pycharm.
 
-The preprocessed dataset can be downloaded from (this link)[https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing].
+The preprocessed dataset can be downloaded from [this link](https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing).
 
 If you wish to do it on your own, please follow the steps below.
 
@@ -62,32 +62,32 @@ The database should structure like below.
 
 ```
 Affwild2 
-â””â”€â”€â”€annotations
-â”‚       â””â”€â”€â”€VA_Set
-â”‚       â”‚        â””â”€â”€â”€Train_Set
-â”‚       â”‚        â”‚   â”‚    4-30-1920x1080.txt  
-â”‚       â”‚        â”‚   â”‚    5-60-1920x1080-1.txt
-â”‚       â”‚        â”‚   â”‚    ...
-â”‚       â”‚        â””â”€â”€â”€Validation_Set
-â”‚       â”‚        â”‚   â”‚    1-30-1280x720.txt
-â”‚       â”‚        â”‚   â”‚    8-30-1280x720.txt
-â”‚       â”‚        â”‚   â”‚    ...
-â”‚   
-â””â”€â”€â”€cropped_aligned
-â”‚   â”‚   1-30-1280x720
-â”‚   â”‚   2-30-640x360
-â”‚   â”‚   3-25-1920x1080
-â”‚   â”‚   ...
-â””â”€â”€â”€raw_video
-â”‚   â”‚   1-30-1280x720.mp4
-â”‚   â”‚   2-30-640x360.mp4
-â”‚   â”‚   3-25-1920x1080.mp4
-â”‚   â”‚   ...
-â””â”€â”€â”€Test_Set
-â”‚   â”‚   2-30-640x360.mp4
-â”‚   â”‚   3-25-1920x1080.mp4
-â”‚   â”‚   6-30-1920x1080.mp4
-â”‚   â”‚   ...
++---annotations
+¦       +---VA_Set
+¦       ¦        +---Train_Set
+¦       ¦        ¦   ¦    4-30-1920x1080.txt  
+¦       ¦        ¦   ¦    5-60-1920x1080-1.txt
+¦       ¦        ¦   ¦    ...
+¦       ¦        +---Validation_Set
+¦       ¦        ¦   ¦    1-30-1280x720.txt
+¦       ¦        ¦   ¦    8-30-1280x720.txt
+¦       ¦        ¦   ¦    ...
+¦   
++---cropped_aligned
+¦   ¦   1-30-1280x720
+¦   ¦   2-30-640x360
+¦   ¦   3-25-1920x1080
+¦   ¦   ...
++---raw_video
+¦   ¦   1-30-1280x720.mp4
+¦   ¦   2-30-640x360.mp4
+¦   ¦   3-25-1920x1080.mp4
+¦   ¦   ...
++---Test_Set
+¦   ¦   2-30-640x360.mp4
+¦   ¦   3-25-1920x1080.mp4
+¦   ¦   6-30-1920x1080.mp4
+¦   ¦   ...
 ```
 
 In `configs.py`, please specify the settings according to your directory.
@@ -119,10 +119,10 @@ The last step for preprocessing is to generate the mean and standard deviation f
  
 ```
 Affwild2_processed
-â”‚   dataset_info.pkl
-â”‚   mean_std_dict.pkl
-â”‚
-â””â”€â”€â”€npy data
+¦   dataset_info.pkl
+¦   mean_std_dict.pkl
+¦
++---npy data
 ```
 
 
@@ -131,7 +131,7 @@ Affwild2_processed
 
 `main.py` is the main function for training. It can be ran using command line or Google Colab.
 
-The preprocessed dataset can be downloaded from (this link)[https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing].
+The preprocessed dataset can be downloaded from [this link](https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing).
 
 Please follow the steps below to train the model. Since we do not have the labels for the test set, the code does not 
 include testing. 
@@ -140,7 +140,7 @@ include testing.
 [Return to Table of Content](#Table_of_Content)
 
 + The pretrained backbone (ResNet50) is shared at [this link](https://drive.google.com/file/d/1izzZNtRIGchbyhf-aiTKB950IH1ZeJ4C/view?usp=sharing).
-+ The preprocessed AffWild2 database is shared at (this link)[https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing].
++ The preprocessed AffWild2 database is shared at [this link](https://drive.google.com/drive/folders/1U1Gx7PgwPt4kGoZ_JmLXUm6MhNU7u8lT?usp=sharing).
 
 ### Step Two: Create the Virtual Environment <a name="TE"></a>
 [Return to Table of Content](#Table_of_Content)
@@ -183,12 +183,3 @@ The leaderboard is released at [this link](https://github.com/dkollias/ABAW2-Res
 
 Our method (Team FlyingPigs) is ranked the fifth place in ABAW2021 Valence-arousal
  Track.
-
-
-
-
-
-
-
- 
- 
