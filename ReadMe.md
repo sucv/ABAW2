@@ -156,7 +156,7 @@ conda install -c anaconda pandas
 
 Special each argument in the `main.py`. Please see the comment for more details.
 
-## Step Four: Execute main.py <a name="TEM"></a>
+## Step Four: Execute `main.py` <a name="TEM"></a>
 [Return to Table of Content](#Table_of_Content)
 
 For Google Colab users, please see `colab_regular.ipynb` for more details.
