@@ -154,7 +154,7 @@ conda install -c anaconda pandas
 ## Step Three: Configure <a name="TC"></a>
 [Return to Table of Content](#Table_of_Content)
 
-Special each argument in the `main.py`. Please see the comment for more details.
+Specify each argument in the `main.py`. Please see the comment for more details.
 
 ## Step Four: Execute `main.py` <a name="TEM"></a>
 [Return to Table of Content](#Table_of_Content)
@@ -174,7 +174,7 @@ python main.py -model_load_path "path/to/load/path" -model_save_path "path/to/sa
 Note:
 + Most of the arguments can be fixed.
 + It is a bad idea to run six folds in a row. Because it will take more than one week...
-+ Multiple machines are required if you wish to finish the training for 6 folds by 2 emotion by 2 modalities = 24 instance in meaningful time.
++ Multiple machines are required if you wish to finish the training for 6 folds by 2 emotion by 2 modalities = 24 instances in a meaningful time.
 
 # Result
 [Return to Table of Content](#Table_of_Content)
@@ -183,3 +183,12 @@ The leaderboard is released at [this link](https://github.com/dkollias/ABAW2-Res
 
 Our method (Team FlyingPigs) is ranked the fifth place in ABAW2021 Valence-arousal
  Track.
+
+
+
+
+
+
+
+ 
+ 
