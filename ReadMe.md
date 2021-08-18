@@ -13,7 +13,7 @@ Please cite [our paper](https://arxiv.org/abs/2107.01175). The citation detail i
     + [Step Two: Create the Virtual Environment](#TE) 
     + [Step Three: Configure](#TC)
     + [Step Four: Execute `main.py`](#TEM)
-+ [End Note](#EN)
++ [Result](#R)
 
 # Preprocessing <a name="Preprocessing"></a>
 [Return to Table of Content](#Table_of_Content)
@@ -176,7 +176,7 @@ Note:
 + It is a bad idea to run six folds in a row. Because it will take more than one week...
 + Multiple machines are required if you wish to finish the training for 6 folds by 2 emotion by 2 modalities = 24 instances in a meaningful time.
 
-# Result
+# Result <a name="R"></a>
 [Return to Table of Content](#Table_of_Content)
 
 The leaderboard is released at [this link](https://github.com/dkollias/ABAW2-Results/blob/main/abaw2_va_leaderboard.pdf). 
