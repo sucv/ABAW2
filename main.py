@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     # 1.5. Debug or not?
     parser.add_argument('-debug', default=0, type=int, help='The number of trials to load for debugging. Set to 0 for non-debugging execution.')
+    parser.add_argument('-test', default=0, type=int, help='Run test using test=1, run training using test=0')
 
     # 1.6. What modality to use?
     #  Set to ['frame'] for unimodal and ['frame', 'mfcc', 'vggish' for multimodal. Using other features may cause bugs.
@@ -121,7 +122,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     sys.path.insert(0, args.python_package_path)
 
-    from test import Experiment
+    if args.test:
+        from test import Experiment
+    else:
+        from experiment_regular import Experiment
 
     experiment_handler = Experiment(args)
     experiment_handler.experiment()
